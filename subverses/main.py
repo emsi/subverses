@@ -6,6 +6,7 @@ from youtube_transcript_api import TranscriptsDisabled
 
 from subverses.config import config
 from subverses.download import download, download_transcripts
+from subverses.transcribe import transcribe_audio
 
 app = typer.Typer(add_completion=False)
 
@@ -16,6 +17,10 @@ def main(
     youtube_url: str = typer.Argument(
         ...,
         help="URL of the YouTube video to download",
+    ),
+    force_transcription_from_audio: bool = typer.Option(
+        False,
+        help="Force transcription from audio file instead of downloading manual transcript",
     ),
     translate_from: str = typer.Option(
         "en",
@@ -37,19 +42,34 @@ def main(
         True,
         help="When downloading audio and video, skip if the file already exists",
     ),
+    min_silence_len_sec: int = typer.Option(
+        2,
+        help="The minimum length of silence to detect, when audio splitting is needed",
+    ),
+    silence_threshold: int = typer.Option(
+        -30,
+        help="The silence threshold used for audio splitting. It should be negative integer in range -60 to -5 dB",
+    ),
 ):
     """Reasoning questions generation tool"""
-    config.initialize(**locals())
+    try:
+        config.initialize(**locals())
+    except ValueError as exception:
+        typer.echo(exception)
+        raise typer.Abort()
 
     if pycountry.languages.get(alpha_2=translate_from) is None:
         raise typer.BadParameter("Invalid language code")
 
-    download(youtube_url)
+    download(config.config)
     try:
-        download_transcripts(youtube_url)
+        config.config.srt_filepath = download_transcripts(config.config)
     except TranscriptsDisabled:
         typer.echo("There is no manual transcript available for this video.")
+    if force_transcription_from_audio or config.config.srt_filepath is None:
+        transcribe_audio(config.config)
 
 
 if __name__ == "__main__":
     app(prog_name="subversed")
+

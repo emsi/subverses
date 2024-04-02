@@ -1,3 +1,5 @@
+"""Download video and transcripts from YouTube"""
+
 from pathlib import Path
 
 import pysrt
@@ -8,20 +10,20 @@ from pytube.extract import video_id
 from tqdm import tqdm
 from youtube_transcript_api import YouTubeTranscriptApi
 
-from subverses.config import config
+from subverses.config import Context
 
 
-def _download(stream: Stream, *, filename_prefix: str, progress=True):
+def _download(context: Context, stream: Stream, *, filename_prefix: str, progress=True):
     """Download a stream"""
-    if config.config.skip_existing and (
-        filename := stream.get_file_path(
-            output_path=config.config.data_dir.as_posix(),
-            filename_prefix=filename_prefix,
+    filename = Path(
+        stream.get_file_path(
+            output_path=context.data_dir.as_posix(), filename_prefix=filename_prefix
         )
-    ):
+    )
+    if context.skip_existing and filename.exists():
         typer.echo(f"Skipping download of existing file: {filename}")
         return stream.get_file_path(
-            output_path=config.config.data_dir.as_posix(),
+            output_path=context.data_dir.as_posix(),
             filename_prefix=filename_prefix,
         )
 
@@ -36,45 +38,42 @@ def _download(stream: Stream, *, filename_prefix: str, progress=True):
         stream._monostate.on_progress = progress_function
 
     return stream.download(
-        output_path=config.config.data_dir.as_posix(),
+        output_path=context.data_dir.as_posix(),
         filename_prefix=filename_prefix,
-        skip_existing=config.config.skip_existing,
-        max_retries=config.config.download_max_retries,
+        skip_existing=context.skip_existing,
+        max_retries=context.download_max_retries,
     )
 
 
-def download(yt_url: str):
+def download(context: Context):
     """Download a video from YouTube and return the file name"""
 
-    yt = YouTube(yt_url)
+    yt = YouTube(context.youtube_url)
 
-    config.config.title = yt.title
-    config.config.data_dir = Path(config.config.data_dir) / sanitize_filename(yt.title)
+    context.title = yt.title
+    context.data_dir = Path(context.data_dir) / sanitize_filename(yt.title)
 
     # Download video and audio streams separately
     video_stream = yt.streams.get_highest_resolution()
 
-    config.config.video_path = _download(video_stream, filename_prefix="video_")
+    context.video_filepath = _download(context, video_stream, filename_prefix="video_")
 
     # Download the lower quality as it transcribes well but is smaller
     audio_stream = yt.streams.filter(only_audio=True).first()
 
-    config.config.audio_path = _download(audio_stream, filename_prefix="audio_")
+    context.audio_filepath = _download(context, audio_stream, filename_prefix="audio_")
 
 
-def download_transcripts(yt_url: str):
-    """Download transcripts for a video"""
-    filename = config.config.data_dir / f"{config.config.translate_from}.srt"
-    config.config.srt_path = filename.as_posix()
-    if config.config.skip_existing and filename.exists():
+def download_transcripts(context: Context):
+    """Download transcripts for a video
+    """
+    filename = context.data_dir / f"{context.translate_from}.srt"
+    if context.skip_existing and filename.exists():
         typer.echo("Skipping download of existing transcript")
-        config.config.srt_path = filename
         return
 
-    vid_id = video_id(yt_url)
-    transcript = YouTubeTranscriptApi.get_transcript(
-        vid_id, languages=[config.config.translate_from]
-    )
+    vid_id = video_id(context.youtube_url)
+    transcript = YouTubeTranscriptApi.get_transcript(vid_id, languages=[context.translate_from])
 
     subs = pysrt.SubRipFile()
 
@@ -87,5 +86,5 @@ def download_transcripts(yt_url: str):
         )
         subs.append(item)
 
-    subs.save(config.config.data_dir / f"{config.config.translate_from}.srt", encoding="utf-8")
-
+    subs.save(filename, encoding="utf-8")
+    return filename.as_posix()

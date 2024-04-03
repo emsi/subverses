@@ -11,6 +11,7 @@ from tqdm import tqdm
 from youtube_transcript_api import YouTubeTranscriptApi
 
 from subverses.config import Context
+from subverses.transcribe import transcription_file_format
 
 
 def _download(context: Context, stream: Stream, *, filename_prefix: str, progress=True):
@@ -21,7 +22,7 @@ def _download(context: Context, stream: Stream, *, filename_prefix: str, progres
         )
     )
     if context.skip_existing and filename.exists():
-        typer.echo(f"Skipping download of existing file: {filename}")
+        typer.echo(f"Skipping download of existing file: '{filename}'")
         return stream.get_file_path(
             output_path=context.data_dir.as_posix(),
             filename_prefix=filename_prefix,
@@ -45,7 +46,7 @@ def _download(context: Context, stream: Stream, *, filename_prefix: str, progres
     )
 
 
-def download(context: Context):
+def download_audio_and_video(context: Context):
     """Download a video from YouTube and return the file name"""
 
     yt = YouTube(context.youtube_url)
@@ -67,10 +68,10 @@ def download(context: Context):
 def download_transcripts(context: Context):
     """Download transcripts for a video
     """
-    filename = context.data_dir / f"{context.translate_from}.srt"
+    filename = transcription_file_format(context.audio_path)
     if context.skip_existing and filename.exists():
-        typer.echo("Skipping download of existing transcript")
-        return
+        typer.echo(f"Skipping download of existing transcript file: '{filename}'")
+        return filename.as_posix()
 
     vid_id = video_id(context.youtube_url)
     transcript = YouTubeTranscriptApi.get_transcript(vid_id, languages=[context.translate_from])

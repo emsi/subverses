@@ -6,3 +6,4 @@ pathvalidate~=3.2.0
 tqdm~=4.66.2
 pycountry~=23.12.11
 pysrt~=1.1.2
+openai~=1.16.1

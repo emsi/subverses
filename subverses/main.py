@@ -1,11 +1,12 @@
 from pathlib import Path
+from typing import Optional
 
 import pycountry
 import typer
 from youtube_transcript_api import TranscriptsDisabled
 
 from subverses.config import config
-from subverses.download import download, download_transcripts
+from subverses.download import download_audio_and_video, download_transcripts
 from subverses.transcribe import transcribe_audio
 
 app = typer.Typer(add_completion=False)
@@ -18,9 +19,29 @@ def main(
         ...,
         help="URL of the YouTube video to download",
     ),
+    whisper_prompt: Optional[str] = typer.Option(
+        None,
+        help="Prompt for the whisper model. See https://cookbook.openai.com/examples/whisper_prompting_guide for more information",
+    ),
+    translate_additional_prompt: Optional[str] = typer.Option(
+        None,
+        help="Additional prompt for the translation model.",
+    ),
+    whisper_model: str = typer.Option(
+        "whisper-1",
+        help="Transcription model name",
+    ),
+    gpt_model: str = typer.Option(
+        "gpt-3.5-turbo",
+        help="Translation model name",
+    ),
     force_transcription_from_audio: bool = typer.Option(
         False,
         help="Force transcription from audio file instead of downloading manual transcript",
+    ),
+    start_transcription_segment: int = typer.Option(
+        0,
+        help="Start transcription from this segment number",
     ),
     translate_from: str = typer.Option(
         "en",
@@ -61,15 +82,17 @@ def main(
     if pycountry.languages.get(alpha_2=translate_from) is None:
         raise typer.BadParameter("Invalid language code")
 
-    download(config.config)
-    try:
-        config.config.srt_filepath = download_transcripts(config.config)
-    except TranscriptsDisabled:
-        typer.echo("There is no manual transcript available for this video.")
+    download_audio_and_video(config.config)
+
+    if not force_transcription_from_audio:
+        try:
+            config.config.srt_filepath = download_transcripts(config.config)
+        except TranscriptsDisabled:
+            typer.echo("There is no manual transcript available for this video.")
+
     if force_transcription_from_audio or config.config.srt_filepath is None:
-        transcribe_audio(config.config)
+        config.config.srt_filepath = transcribe_audio(config.config)
 
 
 if __name__ == "__main__":
     app(prog_name="subversed")
-

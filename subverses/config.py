@@ -11,7 +11,12 @@ class Context(BaseModel):
         extra = Extra.forbid
 
     youtube_url: str
+    whisper_prompt: str | None
+    translate_additional_prompt: str | None
+    whisper_model: str
+    gpt_model: str
     force_transcription_from_audio: bool
+    start_transcription_segment: int
     translate_from: str = "en"
     translate_to: str = "Polish"
     data_dir: Path

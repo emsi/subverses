@@ -106,11 +106,13 @@ def split_audio_with_ffmpeg(context: Context, segments: List[float]):
         raise AudioParseError(stdout_output)
 
 
-def concat_audio_segments(context: Context, input_files: List[Path], output_file: Path):
+def concat_audio_segments(context: Context, input_files: List[Path], output_file: Path) -> Path:
     """Concat back audio segments into chunks of less than max_clip_size.
 
     :param context: The context.
+    :param output_file: The output file path object.
     :param input_files: A list of paths to the split audio files.
+    :return: The path to the concatenated audio file.
     """
     # Create the input string expected by ffmpeg for the concat demuxer
     input_string = "\n".join(f"file '{file.name}'" for file in input_files)
@@ -160,13 +162,15 @@ def concat_audio_segments(context: Context, input_files: List[Path], output_file
         if file != output_file:
             file.unlink()
 
+    return output_file
+
 
 def get_segment_sizes(context: Context, segments: int):
     """Return the size of each segment in seconds."""
     return [n_split_file(context.audio_path, i).stat().st_size for i in range(segments)]
 
 
-def get_sub_max_segments(context: Context, segments: int):
+def get_sub_max_segments(context: Context, segments: int) -> List[List[int]]:
     """Return segments of the audio file that are less than or equal to the max_clip_size.
 
     Returns list of lists of segment numbers such that the sum of the sizes of the segments in each
@@ -193,12 +197,22 @@ def get_sub_max_segments(context: Context, segments: int):
     return segment_groups
 
 
-def recombine_segments(context: Context, segments: int):
-    """Recombine segments into the least number of files smaller than max_clip_size."""
-    segment_groups = get_sub_max_segments(context, segments)
-    for i, segment_group in enumerate(segment_groups):
-        concat_audio_segments(
+def recombine_segments(context: Context, segments: List[float]) -> List[tuple[Path, float]]:
+    """Recombine segments into the least number of files smaller than max_clip_size.
+
+    :param context: The context.
+    :param segments: The number of segments.
+    :return: A list of tuples, each containing the path to the
+        recombined segment and the start time of the segment.
+    """
+    segment_groups = get_sub_max_segments(context, len(segments) + 1)
+    start_times = [0.0] + segments
+
+    return [
+        (concat_audio_segments(
             context,
             [n_split_file(context.audio_path, segment) for segment in segment_group],
             n_split_file(context.audio_path, i),
-        )
+        ), start_times[segment_group[0]])
+        for i, segment_group in enumerate(segment_groups)
+    ]

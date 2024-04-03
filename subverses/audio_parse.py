@@ -22,14 +22,18 @@ class AudioSplitError(AudioParseError):
     """Audio split error."""
 
 
-def split_file_format(audio_file_path: Path):
+class SegmentTooLongError(AudioParseError):
+    """Segment too long error."""
+
+
+def split_file_format(audio_file_path: Path, split_prefix=".splits_"):
     """Return the path used to construct the split file name."""
-    return audio_file_path.parent / (".splits_" + audio_file_path.name)
+    return audio_file_path.parent / (split_prefix + audio_file_path.name)
 
 
-def n_split_file(audio_file_path: Path, split_no: int) -> Path:
+def n_split_file(audio_file_path: Path, split_no: int, split_prefix=".splits_") -> Path:
     """Return the nth split file name."""
-    return split_file_format(audio_file_path).with_suffix(
+    return split_file_format(audio_file_path, split_prefix=split_prefix).with_suffix(
         f".{split_no:03d}" + audio_file_path.suffix
     )
 
@@ -159,8 +163,7 @@ def concat_audio_segments(context: Context, input_files: List[Path], output_file
 
     # cleanup
     for file in input_files:
-        if file != output_file:
-            file.unlink()
+        file.unlink()
 
     return output_file
 
@@ -183,6 +186,8 @@ def get_sub_max_segments(context: Context, segments: int) -> List[List[int]]:
     current_group = []  # List to store the current group of segments
 
     for i, size in enumerate(segment_sizes):
+        if size > max_clip_size:
+            raise SegmentTooLongError(f"Segment {i} is too large.")
         if current_sum + size > max_clip_size:
             segment_groups.append(current_group)
             current_group = [i]  # Start a new group with the current segment
@@ -209,10 +214,13 @@ def recombine_segments(context: Context, segments: List[float]) -> List[tuple[Pa
     start_times = [0.0] + segments
 
     return [
-        (concat_audio_segments(
-            context,
-            [n_split_file(context.audio_path, segment) for segment in segment_group],
-            n_split_file(context.audio_path, i),
-        ), start_times[segment_group[0]])
+        (
+            concat_audio_segments(
+                context,
+                [n_split_file(context.audio_path, segment) for segment in segment_group],
+                n_split_file(context.audio_path, i, split_prefix=".recombined_"),
+            ),
+            start_times[segment_group[0]],
+        )
         for i, segment_group in enumerate(segment_groups)
     ]

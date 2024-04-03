@@ -1,20 +1,22 @@
 from pathlib import Path
 
-from pydantic import BaseModel, Extra, field_validator
+from openai import NOT_GIVEN, NotGiven
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Context(BaseModel):
+class Context(BaseSettings):
     """Application context."""
 
-    class Config:
-        """Pydantic config."""
-        extra = Extra.forbid
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
+    # CLI options
     youtube_url: str
     whisper_prompt: str | None
     translate_additional_prompt: str | None
     whisper_model: str
     gpt_model: str
+    dont_transcribe_audio: bool
     force_transcription_from_audio: bool
     start_transcription_segment: int
     translate_from: str = "en"
@@ -24,17 +26,26 @@ class Context(BaseModel):
     skip_existing: bool
     min_silence_len_sec: int
     silence_threshold: int
+    verbose: bool
 
+    # .env only options
+    openai_api_key: str | None = None
+    openai_organization: str | None = None
+    openai_base_url: str | None = None
+    whisper_openai_timeout: float | None | NotGiven = NOT_GIVEN
+    whisper_openai_max_retries: int | None = 2
+
+    # internal state
     title: str | None = None
     audio_filepath: str | None = None
     video_filepath: str | None = None
     srt_filepath: str | None = None
 
-    @field_validator('silence_threshold')
+    @field_validator("silence_threshold")
     def check_silence_threshold(cls, v):
         """Check the silence threshold."""
         if not -60 <= v <= -5:
-            raise ValueError('silence_threshold must be between -60 and -5')
+            raise ValueError("silence_threshold must be between -60 and -5")
         return v
 
     @property

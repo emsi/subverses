@@ -17,11 +17,11 @@ def main(
     # required positional argument
     youtube_url: str = typer.Argument(
         ...,
-        help="URL of the YouTube video to download",
+        help="URL of the YouTube video to download.",
     ),
     whisper_prompt: Optional[str] = typer.Option(
         None,
-        help="Prompt for the whisper model. See https://cookbook.openai.com/examples/whisper_prompting_guide for more information",
+        help="Prompt for the whisper model. See https://cookbook.openai.com/examples/whisper_prompting_guide for more information.",
     ),
     translate_additional_prompt: Optional[str] = typer.Option(
         None,
@@ -29,19 +29,23 @@ def main(
     ),
     whisper_model: str = typer.Option(
         "whisper-1",
-        help="Transcription model name",
+        help="Transcription model name.",
     ),
     gpt_model: str = typer.Option(
         "gpt-3.5-turbo",
-        help="Translation model name",
+        help="Translation model name.",
+    ),
+    dont_transcribe_audio: bool = typer.Option(
+        True,
+        help="Fail if there is no manual transcript available.",
     ),
     force_transcription_from_audio: bool = typer.Option(
         False,
-        help="Force transcription from audio file instead of downloading manual transcript",
+        help="Force transcription from audio file even if downloading manual transcript is possible.",
     ),
     start_transcription_segment: int = typer.Option(
         0,
-        help="Start transcription from this segment number",
+        help="Start transcription from this segment number.",
     ),
     translate_from: str = typer.Option(
         "en",
@@ -53,23 +57,27 @@ def main(
     ),
     data_dir: Path = typer.Option(
         Path("./data"),
-        help="Directory to store the downloaded data",
+        help="Directory to store the downloaded data.",
     ),
     download_max_retries: int = typer.Option(
         2,
-        help="Maximum number of retries for downloading",
+        help="Maximum number of retries for downloading.",
     ),
     skip_existing: bool = typer.Option(
         True,
-        help="When downloading audio and video, skip if the file already exists",
+        help="When downloading audio and video, skip if the file already exists.",
     ),
     min_silence_len_sec: int = typer.Option(
         2,
-        help="The minimum length of silence to detect, when audio splitting is needed",
+        help="The minimum length of silence to detect, when audio splitting is needed (in seconds).",
     ),
     silence_threshold: int = typer.Option(
         -30,
-        help="The silence threshold used for audio splitting. It should be negative integer in range -60 to -5 dB",
+        help="The silence threshold used for audio splitting. It should be negative integer in range -60 to -5 dB.",
+    ),
+    verbose: bool = typer.Option(
+        False,
+        help="Verbose output.",
     ),
 ):
     """Reasoning questions generation tool"""
@@ -89,6 +97,8 @@ def main(
             config.config.srt_filepath = download_transcripts(config.config)
         except TranscriptsDisabled:
             typer.echo("There is no manual transcript available for this video.")
+            if dont_transcribe_audio:
+                raise typer.Abort()
 
     if force_transcription_from_audio or config.config.srt_filepath is None:
         config.config.srt_filepath = transcribe_audio(config.config)

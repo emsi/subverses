@@ -1,6 +1,8 @@
 from pathlib import Path
 
-import openai
+from openai import OpenAI
+
+
 import pysrt
 import typer
 from tqdm import tqdm
@@ -47,6 +49,8 @@ def transcribe_audio(context: Context) -> Path:
     """Transcribe audio file"""
     audio_file_size = context.audio_path.stat().st_size
     srt_path = transcription_file_format(context.audio_path)
+    if srt_path.exists() and not context.force_transcription_from_audio:
+        return srt_path
     if max_clip_size < audio_file_size:
         typer.echo(
             f"Audio file is too large: {audio_file_size:.1f} bytes. Max size is {max_clip_size // 1024**2} MB."
@@ -89,22 +93,25 @@ def transcribe_file(
 ) -> str:
     """Transcribe an audio file."""
 
-    if segment_no is not None:
-        transcription_path = n_split_transcription_file(audio_segment_path, segment_no)
+    transcription_path = transcription_file_format(audio_segment_path)
 
-        if segment_no < context.start_transcription_segment:
-            return _transcribed_file(transcription_path, segment_offset)
-    else:
-        transcription_path = transcription_file_format(audio_segment_path)
+    if segment_no is not None and segment_no < context.start_transcription_segment:
+        return _transcribed_file(transcription_path, segment_offset)
 
     if transcription_path.exists() and not context.force_transcription_from_audio:
         return _transcribed_file(transcription_path, segment_offset)
 
     with open(audio_segment_path, "rb") as audio_file:
-        transcription = openai.Audio.transcribe(
-            context.whisper_model,
-            audio_file,
-            # this helps to recognize those words in the audio
+        client = OpenAI(
+            api_key=context.openai_api_key,
+            organization=context.openai_organization,
+            base_url=context.openai_base_url,
+            timeout=context.whisper_openai_timeout,
+            max_retries=context.whisper_openai_max_retries,
+        )
+        transcription = client.audio.transcriptions.create(
+            model=context.whisper_model,
+            file=audio_file,
             prompt=context.whisper_prompt,
             response_format="srt",
             language=context.translate_from,

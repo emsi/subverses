@@ -11,6 +11,7 @@ from subverses.audio_parse import (
     recombine_segments,
 )
 from subverses.config import config, Context
+from subverses.errors import Abort
 
 
 def transcription_file_format(audio_file_path: Path):
@@ -33,9 +34,9 @@ def split_audio(context: Context) -> list[tuple[Path, float]]:
     silence_splits = detect_silence_splits_with_ffmpeg(context)
     typer.echo(f"Detected {len(silence_splits) + 1} segments.")
     if len(silence_splits) == 0:
-        raise typer.Abort("No silence detected.")
+        raise Abort("No silence detected.")
     if len(silence_splits) > 1000:
-        raise typer.Abort("Too many segments detected.")
+        raise Abort("Too many segments detected.")
     typer.echo("Splitting audio file...")
     split_audio_with_ffmpeg(config.config, silence_splits)
     typer.echo("Recombining segments to the least possible number of files...")

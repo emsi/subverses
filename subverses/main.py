@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 from typing import Optional
 
@@ -7,11 +8,32 @@ from youtube_transcript_api import TranscriptsDisabled
 
 from subverses.config import config
 from subverses.download import download_audio_and_video, download_transcripts
+from subverses.errors import Abort
 from subverses.render import render
 from subverses.transcribe import transcribe_audio
 from subverses.translate import translate
 
 app = typer.Typer(add_completion=False)
+
+
+def check_dependencies():
+    """Check if the required dependencies are installed."""
+    try:
+        # Try to execute 'ffmpeg -version'
+        result = subprocess.run(
+            ["ffmpeg", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
+        )
+        # If the command was successful, 'ffmpeg' is installed
+        if result.returncode != 0:
+            raise Exception()
+    except Exception:
+        # 'ffmpeg' is not installed if FileNotFoundError is raised
+        raise Abort("ffmpeg is not installed. Please install ffmpeg.")
+
+    if config.config.openai_api_key is None:
+        raise Abort(
+            "OpenAI API key is not set. Please set the OPENAI_API_KEY environment variable or add it to the .env file."
+        )
 
 
 @app.command()
@@ -85,9 +107,10 @@ def main(
     """Reasoning questions generation tool"""
     try:
         config.initialize(**locals())
-    except ValueError as exception:
-        typer.echo(exception)
-        raise typer.Abort()
+    except ValueError as exc:
+        raise Abort(exc)
+
+    check_dependencies()
 
     if pycountry.languages.get(alpha_2=translate_from) is None:
         raise typer.BadParameter("Invalid language code")
@@ -100,7 +123,7 @@ def main(
         except TranscriptsDisabled:
             typer.echo("There is no manual transcript available for this video.")
             if dont_transcribe_audio:
-                raise typer.Abort()
+                raise Abort()
 
     if force_transcription_from_audio or config.config.srt_filepath is None:
         config.config.srt_filepath = transcribe_audio(config.config)
@@ -111,4 +134,8 @@ def main(
 
 
 if __name__ == "__main__":
-    app(prog_name="subversed")
+    try:
+        app(prog_name="subverses")
+    except Abort as exc:
+        typer.echo(exc, err=True)
+        raise SystemExit(1)

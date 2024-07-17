@@ -49,6 +49,7 @@ jobs:
 
     - name: Delete existing release Git tag
       run: |
+        git fetch --tags
         git tag -d master-release
         git push --delete origin master-release
 

@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import openai
 from openai import NOT_GIVEN, NotGiven
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -62,6 +63,24 @@ class Context(BaseSettings):
     def srt_path(self) -> Path:
         """Get the srt path."""
         return Path(self.srt_filepath)
+
+    @property
+    def translated_srt_path(self) -> Path:
+        """Get the translated srt path."""
+        return self.srt_path.with_name(
+            f"{self.srt_path.stem}_{self.translate_to}.srt"
+        )
+
+    @property
+    def openai_client(self):
+        """Returns the initialized OpenAI client."""
+        return openai.OpenAI(
+            api_key=self.openai_api_key,
+            organization=self.openai_organization,
+            base_url=self.openai_base_url,
+            timeout=self.whisper_openai_timeout,
+            max_retries=self.whisper_openai_max_retries,
+        )
 
 
 class Config:

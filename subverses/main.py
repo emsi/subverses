@@ -7,6 +7,7 @@ from youtube_transcript_api import TranscriptsDisabled
 
 from subverses.config import config
 from subverses.download import download_audio_and_video, download_transcripts
+from subverses.render import render
 from subverses.transcribe import transcribe_audio
 from subverses.translate import translate
 
@@ -105,6 +106,8 @@ def main(
         config.config.srt_filepath = transcribe_audio(config.config)
 
     translate(config.config)
+
+    render(config.config)
 
 
 if __name__ == "__main__":

@@ -60,6 +60,12 @@ class Context(BaseSettings):
         return Path(self.video_filepath)
 
     @property
+    def rendered_video_path(self) -> Path:
+        """Get the rendered video path."""
+        # remove the "video_" prefix from the video file name
+        return self.video_path.with_name(self.video_path.name[6:])
+
+    @property
     def srt_path(self) -> Path:
         """Get the srt path."""
         return Path(self.srt_filepath)
@@ -67,9 +73,7 @@ class Context(BaseSettings):
     @property
     def translated_srt_path(self) -> Path:
         """Get the translated srt path."""
-        return self.srt_path.with_name(
-            f"{self.srt_path.stem}_{self.translate_to}.srt"
-        )
+        return self.srt_path.with_name(f"{self.srt_path.stem}_{self.translate_to}.srt")
 
     @property
     def openai_client(self):

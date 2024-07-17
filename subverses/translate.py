@@ -7,6 +7,7 @@ from typing import Dict, List
 
 import joblib
 import pysrt
+import typer
 from tqdm import tqdm
 
 from subverses.config import Context
@@ -165,7 +166,7 @@ def translate_srt(
 
     srt_chunks = split_into_chunks(str_list, chunk_size, overlap)
 
-    progressbar = tqdm(desc="Translating dialog lines", total=100, unit="%")
+    progressbar = tqdm(desc="Translating dialog lines", total=len(srt_chunks))
 
     def chunk_callback(progress):
         progressbar.update(progress)
@@ -177,7 +178,7 @@ def translate_srt(
         if wip and i <= wip["i"]:
             translated_chunks = wip["translated_chunks"]
             messages = wip["messages"]
-            chunk_callback(int((i + 1) / len(srt_chunks) * 100))
+            chunk_callback(i)
             continue
 
         chunk_str = concatenate_srt_list(chunk)
@@ -259,9 +260,6 @@ Stick to {target_language} grammar and punctuation rules.
     ]
 
 
-# Enclose whole translation inside triple single quotes (''').
-
-
 def translation_messages(messages: List[Dict[str, str]], *, target_language: str):
     """Construct the translation messages"""
     return [
@@ -276,7 +274,7 @@ def translate(context: Context):
     """Translate an SRT file"""
 
     if not context.translated_srt_path.exists():
-        print(f"Translating {context.srt_filepath} to {context.translated_srt_path}")
+        typer.echo(f"Translating {context.srt_filepath} to {context.translated_srt_path}")
 
         srt_list = translate_srt(
             context,
@@ -286,5 +284,5 @@ def translate(context: Context):
         )
         srt_dump(srt_list=srt_list, srt_filename=context.translated_srt_path)
     else:
-        print(f"Translated SRT file already exists: {context.translated_srt_path}")
+        typer.echo(f"Translated SRT file already exists: {context.translated_srt_path}")
         return

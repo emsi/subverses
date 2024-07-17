@@ -21,6 +21,7 @@ jobs:
 
     - name: Install PyInstaller
       run: |
+        pip3 install "cython<3.0" wheel && pip3 install --no-build-isolation "pyyaml==5.4.1" && pipenv sync --system 
         pip install pyinstaller
         pip install -r requirements.txt
 

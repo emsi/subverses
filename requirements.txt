@@ -3,12 +3,12 @@ youtube_transcript_api
 pytube>=15.0.0
 pytubefix>=6.2.2
 pathvalidate~=3.2.0
-python-dotenv~=0.19.0
 tqdm~=4.66.2
 pycountry~=23.12.11
 pysrt~=1.1.2
 openai~=1.16.1
 pydantic>=2.7.0
+pydantic-settings
 python-dotenv>=0.21.0
 requests>=2.31.0
 bs4>=0.0.2

@@ -1,0 +1,34 @@
+name: Build Application
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.11'
+
+    - name: Install PyInstaller
+      run: |
+        pip install pyinstaller
+        pip install -r requirements.txt
+
+    - name: Build Project
+      run: |
+        pyinstaller --onefile --add-data "subverses:subverses" --name subverses subverses/main.py
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: subverses-executable
+        path: dist/subverses

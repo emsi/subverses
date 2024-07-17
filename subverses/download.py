@@ -5,8 +5,8 @@ from pathlib import Path
 import pysrt
 import typer
 from pathvalidate import sanitize_filename
-from pytube import Stream, YouTube
-from pytube.extract import video_id
+from pytubefix import Stream, YouTube
+from pytubefix.extract import video_id
 from tqdm import tqdm
 from youtube_transcript_api import YouTubeTranscriptApi
 

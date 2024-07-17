@@ -35,13 +35,18 @@ jobs:
         name: subverses-executable
         path: dist/subverses
 
+    - name: Delete Old Releases
+      run: |
+        curl -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+        https://api.github.com/repos/${{ github.repository }}/releases/:subverses-master
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: subverses-${{ github.sha }}
+        tag_name: subverses-master
         release_name: Release ${{ github.sha }}
         draft: false
         prerelease: false
@@ -56,7 +61,3 @@ jobs:
         asset_name: subverses
         asset_content_type: application/octet-stream
 
-    - name: Delete Old Releases
-      run: |
-        curl -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-        https://api.github.com/repos/${{ github.repository }}/releases/:subverses-current

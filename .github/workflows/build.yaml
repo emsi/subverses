@@ -47,7 +47,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: master
-        release_name: subcerses-master
+        release_name: subverses-master
         draft: false
         prerelease: false
 

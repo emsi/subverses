@@ -1,8 +1,5 @@
 from pathlib import Path
 
-from openai import OpenAI
-
-
 import pysrt
 import typer
 from tqdm import tqdm
@@ -102,14 +99,7 @@ def transcribe_file(
         return _transcribed_file(transcription_path, segment_offset)
 
     with open(audio_segment_path, "rb") as audio_file:
-        client = OpenAI(
-            api_key=context.openai_api_key,
-            organization=context.openai_organization,
-            base_url=context.openai_base_url,
-            timeout=context.whisper_openai_timeout,
-            max_retries=context.whisper_openai_max_retries,
-        )
-        transcription = client.audio.transcriptions.create(
+        transcription = context.openai_client.audio.transcriptions.create(
             model=context.whisper_model,
             file=audio_file,
             prompt=context.whisper_prompt,

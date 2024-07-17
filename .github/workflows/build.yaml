@@ -73,4 +73,3 @@ jobs:
         asset_path: ./dist/subverses
         asset_name: subverses
         asset_content_type: application/octet-stream
-

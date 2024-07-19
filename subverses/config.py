@@ -41,7 +41,7 @@ class Context(BaseSettings):
     title: str | None = None
     audio_filepath: str | None = None
     video_filepath: str | None = None
-    srt_filepath: str | None = None
+    have_ffmpeg: bool = False
 
     @field_validator("silence_threshold")
     def check_silence_threshold(cls, v):
@@ -53,11 +53,15 @@ class Context(BaseSettings):
     @property
     def audio_path(self) -> Path:
         """Get the audio path."""
+        if self.audio_filepath is None:
+            raise ValueError("Audio file path not set")
         return Path(self.audio_filepath)
 
     @property
     def video_path(self) -> Path:
         """Get the video path."""
+        if self.video_filepath is None:
+            raise ValueError("Video file path not set")
         return Path(self.video_filepath)
 
     @property
@@ -69,7 +73,9 @@ class Context(BaseSettings):
     @property
     def srt_path(self) -> Path:
         """Get the srt path."""
-        return Path(self.srt_filepath)
+        if self.audio_filepath is not None:
+            return self.audio_path.with_suffix(".srt")
+        raise ValueError("No audio or video file path set")
 
     @property
     def translated_srt_path(self) -> Path:

@@ -123,14 +123,14 @@ def main(
 
     if not force_transcription_from_audio:
         try:
-            config.config.srt_filepath = download_transcripts(config.config)
+            download_transcripts(config.config)
         except TranscriptsDisabled:
             typer.echo("There is no manual transcript available for this video.")
             if dont_transcribe_audio:
                 raise Abort()
 
-    if force_transcription_from_audio or config.config.srt_filepath is None:
-        config.config.srt_filepath = transcribe_audio(config.config)
+    if force_transcription_from_audio or not config.config.srt_path.exists():
+        transcribe_audio(config.config)
 
     translate(config.config)
 

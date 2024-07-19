@@ -68,10 +68,9 @@ def download_audio_and_video(context: Context):
 def download_transcripts(context: Context):
     """Download transcripts for a video
     """
-    filename = transcription_file_format(context.audio_path)
-    if context.skip_existing and filename.exists():
-        typer.echo(f"Skipping download of existing transcript file: '{filename}'")
-        return filename.as_posix()
+    if context.skip_existing and context.srt_path.exists():
+        typer.echo(f"Skipping download of existing transcript file: '{context.srt_path}'")
+        return context.srt_path.as_posix()
 
     vid_id = video_id(context.youtube_url)
     transcript = YouTubeTranscriptApi.get_transcript(vid_id, languages=[context.translate_from])
@@ -87,5 +86,5 @@ def download_transcripts(context: Context):
         )
         subs.append(item)
 
-    subs.save(filename, encoding="utf-8")
-    return filename.as_posix()
+    subs.save(context.srt_path, encoding="utf-8")
+    return context.srt_path.as_posix()

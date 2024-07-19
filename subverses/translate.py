@@ -274,7 +274,7 @@ def translate(context: Context):
     """Translate an SRT file"""
 
     if not context.translated_srt_path.exists():
-        typer.echo(f"Translating {context.srt_filepath} to {context.translated_srt_path}")
+        typer.echo(f"Translating {context.srt_path} to {context.translated_srt_path}")
 
         srt_list = translate_srt(
             context,

@@ -25,6 +25,8 @@ def render_ffmpeg(video_file_path, audio_file_path, subtitle_path, rendered_file
         "0",
         "-map",
         "1",
+        "-map",
+        "2",
         rendered_file_path,
     ]
     typer.echo(" ".join(command))

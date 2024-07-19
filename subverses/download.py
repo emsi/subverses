@@ -47,7 +47,7 @@ def _download(context: Context, stream: Stream, *, filename_prefix: str, progres
 
 
 def download_audio_and_video(context: Context):
-    """Download a video from YouTube and return the file name"""
+    """Download a video from YouTube"""
 
     yt = YouTube(context.youtube_url)
 
@@ -55,7 +55,7 @@ def download_audio_and_video(context: Context):
     context.data_dir = Path(context.data_dir) / sanitize_filename(yt.title)
 
     # Download video and audio streams separately
-    video_stream = yt.streams.get_highest_resolution()
+    video_stream = yt.streams.order_by("resolution").last()
 
     context.video_filepath = _download(context, video_stream, filename_prefix="video_")
 

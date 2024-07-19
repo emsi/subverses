@@ -22,6 +22,7 @@ class Context(BaseSettings):
     start_transcription_segment: int
     translate_from: str = "en"
     translate_to: str = "Polish"
+    render: bool
     data_dir: Path
     download_max_retries: int
     skip_existing: bool
@@ -63,7 +64,7 @@ class Context(BaseSettings):
     def rendered_video_path(self) -> Path:
         """Get the rendered video path."""
         # remove the "video_" prefix from the video file name
-        return self.video_path.with_name(self.video_path.name[6:])
+        return self.video_path.with_name(self.video_path.name[6:]).with_suffix(".mp4")
 
     @property
     def srt_path(self) -> Path:

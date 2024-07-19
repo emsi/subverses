@@ -9,7 +9,7 @@ from youtube_transcript_api import TranscriptsDisabled
 from subverses.config import config
 from subverses.download import download_audio_and_video, download_transcripts
 from subverses.errors import Abort
-from subverses.render import render
+from subverses.render import render_final_video
 from subverses.transcribe import transcribe_audio
 from subverses.translate import translate
 
@@ -79,6 +79,10 @@ def main(
         "Polish",
         help="Translate to language. Use full language name.",
     ),
+    render: bool = typer.Option(
+        True,
+        help="Do render the final video.",
+    ),
     data_dir: Path = typer.Option(
         Path("./data"),
         help="Directory to store the downloaded data.",
@@ -130,7 +134,8 @@ def main(
 
     translate(config.config)
 
-    render(config.config)
+    if render:
+        render_final_video(config.config)
 
 
 if __name__ == "__main__":

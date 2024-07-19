@@ -13,13 +13,13 @@ def render_ffmpeg(video_file_path, audio_file_path, subtitle_path, rendered_file
         "-i", audio_file_path,
         "-i", subtitle_path,
         "-c:v", "copy",
-        "-c:a", "aac",
+        "-c:a", "copy",
         "-c:s", "mov_text",
         "-map", "0",
         "-map", "1",
-        "-map", "2",
         rendered_file_path,
     ]
+    typer.echo(" ".join(command))
 
     # Use Popen to initiate the ffmpeg process
     process = subprocess.Popen(command, universal_newlines=True)
@@ -28,15 +28,15 @@ def render_ffmpeg(video_file_path, audio_file_path, subtitle_path, rendered_file
     process.communicate()
 
 
-def render(context: Context):
+def render_final_video(context: Context):
     """Render the video"""
     if not context.rendered_video_path.exists():
         typer.echo("Rendering video...")
         render_ffmpeg(
-            context.video_path,
-            context.audio_path,
-            context.translated_srt_path,
-            context.rendered_video_path,
+            context.video_path.as_posix(),
+            context.audio_path.as_posix(),
+            context.translated_srt_path.as_posix(),
+            context.rendered_video_path.as_posix(),
         )
     else:
         typer.echo(f"Skipping rendering, file already exists: {context.rendered_video_path}")

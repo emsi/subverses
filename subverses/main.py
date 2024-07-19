@@ -4,10 +4,14 @@ from typing import Optional
 
 import pycountry
 import typer
-from youtube_transcript_api import TranscriptsDisabled
 
 from subverses.config import config
-from subverses.download import download_audio_and_video, download_transcripts
+from subverses.download import (
+    get_yuoutube_stream,
+    download_audio,
+    download,
+    download_video,
+)
 from subverses.errors import Abort
 from subverses.render import render_final_video
 from subverses.transcribe import transcribe_audio
@@ -21,7 +25,7 @@ def check_dependencies():
     try:
         # Try to execute 'ffmpeg -version'
         result = subprocess.run(
-            ["ffmpeg", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
+            ["XXXffmpeg", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
         )
         # If the command was successful, 'ffmpeg' is installed
         if result.returncode != 0:
@@ -59,10 +63,6 @@ def main(
     gpt_model: str = typer.Option(
         "gpt-3.5-turbo",
         help="Translation model name.",
-    ),
-    dont_transcribe_audio: bool = typer.Option(
-        True,
-        help="Fail if there is no manual transcript available.",
     ),
     force_transcription_from_audio: bool = typer.Option(
         False,
@@ -114,29 +114,27 @@ def main(
         config.initialize(**locals())
     except ValueError as exc:
         raise Abort(exc)
+    context = config.config
 
     check_dependencies()
 
     if pycountry.languages.get(alpha_2=translate_from) is None:
         raise typer.BadParameter("Invalid language code")
 
-    download_audio_and_video(config.config)
+    get_yuoutube_stream(context)
 
-    if not force_transcription_from_audio:
-        try:
-            download_transcripts(config.config)
-        except TranscriptsDisabled:
-            typer.echo("There is no manual transcript available for this video.")
-            if dont_transcribe_audio:
-                raise Abort()
+    if download(context) == "audio":
+        transcribe_audio(context)
 
-    if force_transcription_from_audio or not config.config.srt_path.exists():
-        transcribe_audio(config.config)
-
-    translate(config.config)
+    translate(context)
 
     if render:
-        render_final_video(config.config)
+        if not context.have_ffmpeg:
+            raise Abort("Cannot render video without ffmpeg.")
+        download_video(context)
+        if not context.audio_filepath:
+            download_audio(context)
+        render_final_video(context)
 
 
 if __name__ == "__main__":

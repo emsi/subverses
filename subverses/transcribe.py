@@ -45,10 +45,10 @@ def split_audio(context: Context) -> list[tuple[Path, float]]:
 
 def transcribe_audio(context: Context) -> Path:
     """Transcribe audio file"""
+    typer.echo("Transcribing audio...")
     audio_file_size = context.audio_path.stat().st_size
-    srt_path = transcription_file_format(context.audio_path)
-    if srt_path.exists() and not context.force_transcription_from_audio:
-        return srt_path
+    if context.srt_path.exists() and not context.force_transcription_from_audio:
+        return context.srt_path
     if max_clip_size < audio_file_size:
         typer.echo(
             f"Audio file is too large: {audio_file_size:.1f} bytes. Max size is {max_clip_size // 1024**2} MB."
@@ -69,12 +69,12 @@ def transcribe_audio(context: Context) -> Path:
             progress.update(1)
 
         # write the transcription file
-        with open(srt_path, "w") as f:
+        with open(context.srt_path, "w") as f:
             f.write(transcription)
     else:
         transcribe_file(context, context.audio_path)
 
-    return srt_path
+    return context.srt_path
 
 
 def _transcribed_file(transcription_path, segment_offset):

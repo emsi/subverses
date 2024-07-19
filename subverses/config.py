@@ -4,6 +4,7 @@ import openai
 from openai import NOT_GIVEN, NotGiven
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pytubefix import YouTube
 
 
 class Context(BaseSettings):
@@ -17,7 +18,6 @@ class Context(BaseSettings):
     translate_additional_prompt: str | None
     whisper_model: str
     gpt_model: str
-    dont_transcribe_audio: bool
     force_transcription_from_audio: bool
     start_transcription_segment: int
     translate_from: str = "en"
@@ -41,7 +41,9 @@ class Context(BaseSettings):
     title: str | None = None
     audio_filepath: str | None = None
     video_filepath: str | None = None
+    srt_filepath: str | None = None
     have_ffmpeg: bool = False
+    youtube_stream: YouTube | None = None
 
     @field_validator("silence_threshold")
     def check_silence_threshold(cls, v):
@@ -73,9 +75,9 @@ class Context(BaseSettings):
     @property
     def srt_path(self) -> Path:
         """Get the srt path."""
-        if self.audio_filepath is not None:
-            return self.audio_path.with_suffix(".srt")
-        raise ValueError("No audio or video file path set")
+        if self.srt_filepath is None:
+            raise ValueError("SRT file path not set")
+        return Path(self.srt_filepath)
 
     @property
     def translated_srt_path(self) -> Path:

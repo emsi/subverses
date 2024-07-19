@@ -48,6 +48,7 @@ def transcribe_audio(context: Context) -> Path:
     typer.echo("Transcribing audio...")
     audio_file_size = context.audio_path.stat().st_size
     if context.srt_path.exists() and not context.force_transcription_from_audio:
+        typer.echo(f"Skipping transcription of existing file: '{context.srt_path}'")
         return context.srt_path
     if max_clip_size < audio_file_size:
         typer.echo(
@@ -91,7 +92,10 @@ def transcribe_file(
 ) -> str:
     """Transcribe an audio file."""
 
-    transcription_path = transcription_file_format(audio_segment_path)
+    if segment_no is not None:
+        transcription_path = transcription_file_format(audio_segment_path)
+    else:
+        transcription_path = context.srt_path
 
     if segment_no is not None and segment_no < context.start_transcription_segment:
         return _transcribed_file(transcription_path, segment_offset)

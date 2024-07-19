@@ -168,8 +168,8 @@ def translate_srt(
 
     progressbar = tqdm(desc="Translating dialog lines", total=len(srt_chunks))
 
-    def chunk_callback(progress):
-        progressbar.update(progress)
+    def chunk_callback():
+        progressbar.update()
 
     messages = []
     translated_chunks = []
@@ -178,7 +178,7 @@ def translate_srt(
         if wip and i <= wip["i"]:
             translated_chunks = wip["translated_chunks"]
             messages = wip["messages"]
-            chunk_callback(i)
+            chunk_callback()
             continue
 
         chunk_str = concatenate_srt_list(chunk)
@@ -206,7 +206,7 @@ def translate_srt(
                 "content": response,
             }
         ]
-        chunk_callback(int((i + 1) / len(srt_chunks) * 100))
+        chunk_callback()
 
         # dump progress
         joblib.dump(

@@ -28,7 +28,13 @@ def _download(context: Context, stream: Stream, *, filename_prefix: str, progres
             filename_prefix=filename_prefix,
         )
 
-    with tqdm(total=stream.filesize, unit="B", unit_scale=True, desc=f"Downloading {filename_prefix[:-1]}") as progress:
+    with tqdm(
+        total=stream.filesize,
+        unit="B",
+        unit_scale=True,
+        desc=f"Downloading {filename_prefix[:-1]}",
+    ) as progress:
+
         def progress_function(stream, chunk, bytes_remaining):
             current = (stream.filesize - bytes_remaining) / stream.filesize
             total = stream.filesize
@@ -94,6 +100,16 @@ def download_audio_and_video(context: Context):
     context.audio_filepath = _download(context, audio_stream, filename_prefix="audio_")
 
 
+def overlapping_subs(transcript):
+    """Check if there are overlapping subtitles"""
+    prev_end_time = 0
+    for segment in transcript:
+        end_time = segment["start"] + segment["duration"]
+        if segment["start"] < prev_end_time:
+            raise Abort("Overlapping subtitles detected")
+        prev_end_time = end_time
+
+
 def download_subtitles(context: Context):
     """Download subtitles for a video"""
     if context.skip_existing and context.srt_path.exists():
@@ -102,6 +118,7 @@ def download_subtitles(context: Context):
 
     vid_id = video_id(context.youtube_url)
     transcript = YouTubeTranscriptApi.get_transcript(vid_id, languages=[context.translate_from])
+    overlapping_subs(transcript)
 
     subs = pysrt.SubRipFile()
 

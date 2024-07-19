@@ -25,15 +25,15 @@ def check_dependencies():
     try:
         # Try to execute 'ffmpeg -version'
         result = subprocess.run(
-            ["XXXffmpeg", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
+            ["ffmpeg", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
         )
         # If the command was successful, 'ffmpeg' is installed
         if result.returncode != 0:
             raise Exception()
+        config.config.have_ffmpeg = True
     except Exception:
         # 'ffmpeg' is not installed if FileNotFoundError is raised
         typer.echo("WARNING: ffmpeg is not installed! Won't be able to render or split audio.")
-        config.config.have_ffmpeg = False
 
     if config.config.openai_api_key is None:
         raise Abort(

@@ -28,7 +28,8 @@ def check_dependencies():
             raise Exception()
     except Exception:
         # 'ffmpeg' is not installed if FileNotFoundError is raised
-        raise Abort("ffmpeg is not installed. Please install ffmpeg.")
+        typer.echo("WARNING: ffmpeg is not installed! Won't be able to render or split audio.")
+        config.config.have_ffmpeg = False
 
     if config.config.openai_api_key is None:
         raise Abort(

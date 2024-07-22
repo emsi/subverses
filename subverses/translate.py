@@ -115,7 +115,7 @@ def _find_overlap(chunk1, chunk2, overlap):
         if chunk1[-overlap + i]["text"] == chunk2[i]["text"]:
             return chunk1[: -overlap + i] + chunk2[i:]
 
-    print(f"*** No overlap found:\n{chunk1}\n{chunk2}")
+    print(f"*** No overlap found:\n{chunk1}\n**** \n{chunk2}")
     return chunk1 + chunk2[overlap:]
 
 
@@ -212,7 +212,7 @@ def translate_srt(
         joblib.dump(
             {"i": i, "translated_chunks": translated_chunks, "messages": messages}, wip_file
         )
-
+    # wip_file.unlink()
     return join_overlapping_chunks(translated_chunks, overlap)
 
 
@@ -251,9 +251,7 @@ def translation_message(text_chunk, *, target_language, extra_prompt_instruction
 {text_chunk}
 '''
 Please translate above text to {target_language}. 
-Please maintain the exact text structure (lines of text, empty lines, line breaks, etc.) and do not add or remove any text.
-Make sure the line numbers are unchanged!
-Stick to {target_language} grammar and punctuation rules.
+Output ONLY translated text!
 {extra_prompt_instruction}
 """,
         }
@@ -265,7 +263,11 @@ def translation_messages(messages: List[Dict[str, str]], *, target_language: str
     return [
         {
             "role": "system",
-            "content": f"""You are a world class professional translator specialized in translating to {target_language}.""",
+            "content": f"""You are a world class professional translator specialized in translating to {target_language}.
+Please maintain the exact text structure (lines of text, empty lines, line breaks, etc.) and do not add or remove any text!
+Make sure the line numbers are unchanged!
+Do not skip any line, even if you would have to output empty line, although try to translate in a way that does not result in empty lines.
+Stick to {target_language} grammar and punctuation rules.""",
         }
     ] + messages
 

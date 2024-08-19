@@ -14,20 +14,28 @@ class Context(BaseSettings):
 
     # CLI options
     youtube_url: str
-    whisper_prompt: str | None
-    translate_additional_prompt: str | None
-    whisper_model: str
-    gpt_model: str
-    force_transcription_from_audio: bool
-    start_transcription_segment: int
-    translate_from: str = "en"
-    translate_to: str = "Polish"
+    # processing steps
+    download: bool
+    transcribe: bool
+    translate: bool
     render: bool
+    # download options
     data_dir: Path
     download_max_retries: int
     skip_existing: bool
+    # transcription options
+    whisper_prompt: str | None
+    whisper_model: str
+    force_transcription_from_audio: bool
+    start_transcription_segment: int
     min_silence_len_sec: int
     silence_threshold: int
+    # translation options
+    translate_additional_prompt: str | None
+    gpt_model: str
+    translate_from: str = "en"
+    translate_to: str = "Polish"
+    # debug options
     verbose: bool
 
     # .env only options

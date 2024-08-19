@@ -9,13 +9,13 @@ from subverses.config import config
 from subverses.download import (
     get_yuoutube_stream,
     download_audio,
-    download,
+    download as do_download,
     download_video,
 )
 from subverses.errors import Abort
 from subverses.render import render_final_video
 from subverses.transcribe import transcribe_audio
-from subverses.translate import translate
+from subverses.translate import translate as do_translate
 
 app = typer.Typer(add_completion=False)
 
@@ -48,41 +48,21 @@ def main(
         ...,
         help="URL of the YouTube video to download.",
     ),
-    whisper_prompt: Optional[str] = typer.Option(
-        None,
-        help="Prompt for the whisper model. See https://cookbook.openai.com/examples/whisper_prompting_guide for more information.",
+    download: bool = typer.Option(
+        True,
+        help="Download subtitles and streams. If --no-download it basically just checks streams and acts like dry run.",
     ),
-    translate_additional_prompt: Optional[str] = typer.Option(
-        None,
-        help="Additional prompt for the translation model.",
+    transcribe: bool = typer.Option(
+        True,
+        help="Transcribe the audio. If --no-transcribe and no subtitles are available it will end processing after download.",
     ),
-    whisper_model: str = typer.Option(
-        "whisper-1",
-        help="Transcription model name.",
-    ),
-    gpt_model: str = typer.Option(
-        "gpt-3.5-turbo",
-        help="Translation model name.",
-    ),
-    force_transcription_from_audio: bool = typer.Option(
-        False,
-        help="Force transcription from audio file even if downloading manual transcript is possible.",
-    ),
-    start_transcription_segment: int = typer.Option(
-        0,
-        help="Start transcription from this segment number.",
-    ),
-    translate_from: str = typer.Option(
-        "en",
-        help="Translate from language. Use two letter ISO 639-1 country code.",
-    ),
-    translate_to: str = typer.Option(
-        "Polish",
-        help="Translate to language. Use full language name.",
+    translate: bool = typer.Option(
+        True,
+        help="Translate the subtitles. If --no-translate it will end processing after download and transcription.",
     ),
     render: bool = typer.Option(
         True,
-        help="Do render the final video.",
+        help="Render the final video.",
     ),
     data_dir: Path = typer.Option(
         Path("./data"),
@@ -96,6 +76,23 @@ def main(
         True,
         help="When downloading audio and video, skip if the file already exists.",
     ),
+
+    whisper_prompt: Optional[str] = typer.Option(
+        None,
+        help="Prompt for the whisper model. See https://cookbook.openai.com/examples/whisper_prompting_guide for more information.",
+    ),
+    whisper_model: str = typer.Option(
+        "whisper-1",
+        help="Transcription model name.",
+    ),
+    force_transcription_from_audio: bool = typer.Option(
+        False,
+        help="Force transcription from audio file even if downloading manual transcript is possible.",
+    ),
+    start_transcription_segment: int = typer.Option(
+        0,
+        help="Start transcription from this segment number.",
+    ),
     min_silence_len_sec: int = typer.Option(
         2,
         help="The minimum length of silence to detect, when audio splitting is needed (in seconds).",
@@ -103,6 +100,22 @@ def main(
     silence_threshold: int = typer.Option(
         -30,
         help="The silence threshold used for audio splitting. It should be negative integer in range -60 to -5 dB.",
+    ),
+    translate_additional_prompt: Optional[str] = typer.Option(
+        None,
+        help="Additional prompt for the translation model.",
+    ),
+    gpt_model: str = typer.Option(
+        "gpt-3.5-turbo",
+        help="Translation model name.",
+    ),
+    translate_from: str = typer.Option(
+        "en",
+        help="Translate from language. Use two letter ISO 639-1 country code.",
+    ),
+    translate_to: str = typer.Option(
+        "Polish",
+        help="Translate to language. Use full language name.",
     ),
     verbose: bool = typer.Option(
         False,
@@ -123,10 +136,18 @@ def main(
 
     get_yuoutube_stream(context)
 
-    if download(context) == "audio":
+    if not download:
+        return
+
+    if do_download(context) == "audio":
+        if not transcribe:
+            raise Abort("No subtitles available and transcribe is disabled.")
         transcribe_audio(context)
 
-    translate(context)
+    if translate:
+        do_translate(context)
+    else:
+        return
 
     if render:
         if not context.have_ffmpeg:

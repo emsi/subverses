@@ -10,7 +10,7 @@ from subverses.download import (
     get_yuoutube_stream,
     download_audio,
     download as do_download,
-    download_video,
+    download_video, get_local_stream,
 )
 from subverses.errors import Abort
 from subverses.render import render_final_video
@@ -134,7 +134,11 @@ def main(
     if pycountry.languages.get(alpha_2=translate_from) is None:
         raise typer.BadParameter("Invalid language code")
 
-    get_yuoutube_stream(context)
+    # check if youtube_url is an url or a local path
+    if not youtube_url.startswith("http"):
+        get_local_stream(context)
+    else:
+        get_yuoutube_stream(context)
 
     if not download:
         return
@@ -152,7 +156,8 @@ def main(
     if render:
         if not context.have_ffmpeg:
             raise Abort("Cannot render video without ffmpeg.")
-        download_video(context)
+        if not context.local_stream:
+            download_video(context)
         if not context.audio_filepath:
             download_audio(context)
         render_final_video(context)

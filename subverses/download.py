@@ -10,6 +10,7 @@ from pytubefix.extract import video_id
 from tqdm import tqdm
 from youtube_transcript_api import YouTubeTranscriptApi
 
+from subverses.audio_parse import extract_audio
 from subverses.config import Context
 from subverses.errors import Abort
 
@@ -49,6 +50,24 @@ def _download(context: Context, stream: Stream, *, filename_prefix: str, progres
             skip_existing=context.skip_existing,
             max_retries=context.download_max_retries,
         )
+
+
+def get_local_stream(context: Context):
+    """Get a local file stream"""
+    local_path = Path(context.youtube_url).expanduser().resolve()
+
+    if not local_path.exists():
+        raise Abort(f"File not found: {context.youtube_url}")
+
+    context.video_filepath = local_path.as_posix()
+    context.data_dir = Path(context.data_dir) / local_path.stem
+    context.srt_filepath = (context.data_dir / local_path.with_suffix(".srt").name).as_posix()
+    context.audio_filepath = (
+        context.data_dir
+        / local_path.with_name("audio_" + local_path.stem).with_suffix(".mp3").name
+    ).as_posix()
+    context.local_stream = True
+    context.data_dir.mkdir(parents=True, exist_ok=True)
 
 
 def get_yuoutube_stream(context: Context):
@@ -136,6 +155,13 @@ def download_subtitles(context: Context):
 
 def download(context: Context):
     """Download necessary files"""
+    if context.local_stream:
+        if context.have_ffmpeg:
+            extract_audio(context)
+            return "audio"
+        else:
+            raise Abort("FFmpeg is not installed.")
+
     if not context.force_transcription_from_audio:
         try:
             if download_subtitles(context):

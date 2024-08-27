@@ -35,7 +35,7 @@ def parse_block(block):
 
         return {"text": text, "start_time": start_time, "end_time": end_time}
     except ValueError:
-        raise ValueError(f"""Error parsing subtitles. Invalid block "{block}" """)
+        typer.echo(f"""Error parsing subtitles. Invalid block "{block}" """, err=True)
 
 
 def srt_parse(srt_text: str) -> List[Dict[str, str]]:

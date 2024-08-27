@@ -52,6 +52,7 @@ class Context(BaseSettings):
     srt_filepath: str | None = None
     have_ffmpeg: bool = False
     youtube_stream: YouTube | None = None
+    local_stream: bool = False
 
     @field_validator("silence_threshold")
     def check_silence_threshold(cls, v):

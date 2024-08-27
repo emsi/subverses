@@ -1,6 +1,9 @@
 import subprocess
+import sys
 from pathlib import Path
 from typing import List
+
+import typer
 
 from subverses.config import Context
 
@@ -46,16 +49,16 @@ def detect_silence_splits_with_ffmpeg(context: Context) -> List[float]:
     command = [
         "ffmpeg",
         "-i",
-        context.audio_path,
+        context.audio_filepath,
         "-af",
         f"silencedetect=noise={context.silence_threshold}dB:duration={context.min_silence_len_sec}",
         "-f",
         "null",
         "-",
     ]
+    typer.echo(" ".join(command))
     process = subprocess.Popen(
         command,
-        cwd=context.data_dir,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         universal_newlines=True,
@@ -224,3 +227,36 @@ def recombine_segments(context: Context, segments: List[float]) -> List[tuple[Pa
         )
         for i, segment_group in enumerate(segment_groups)
     ]
+
+
+def extract_audio(context):
+    """Extract audio from a video file"""
+
+    if context.skip_existing and context.audio_path.exists():
+        typer.echo(f"Skipping extraction of audio file: '{context.audio_filepath}'")
+        return
+
+    command = [
+        "ffmpeg",
+        "-i",
+        context.video_filepath,
+        "-vn",
+        "-c:a",
+        "libmp3lame",
+        "-b:a",
+        "56k",
+        "-ac 1",
+        context.audio_filepath,
+    ]
+    typer.echo(" ".join(command))
+
+    process = subprocess.Popen(
+        command, stdout=sys.stdout, stderr=sys.stderr, universal_newlines=True
+    )
+    # Wait for the process to complete
+    process.wait()
+
+    # Check for errors
+    if process.returncode != 0:
+        raise AudioParseError(
+            "FFmpeg process failed with exit code: {}".format(process.returncode))

@@ -10,7 +10,7 @@ from subverses.download import (
     get_yuoutube_stream,
     download_audio,
     download as do_download,
-    download_video,
+    download_video, get_local_stream,
 )
 from subverses.errors import Abort
 from subverses.render import render_final_video

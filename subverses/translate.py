@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Dict, List
 
 import joblib
+import openai
 import pysrt
 import typer
 from tqdm import tqdm
@@ -134,15 +135,16 @@ def join_overlapping_chunks(chunks, overlap):
 
 
 def translate_srt(
-    context: Context,
     *,
     srt_path: Path,
     target_language: str,
     extra_prompt_instruction="",
+    openai_client: openai.OpenAI,
     model: str,
     temperature=0.0,
     chunk_size=8,
     overlap=3,
+    verbose=False,
 ):
     """Translate an SRT file
 
@@ -189,11 +191,12 @@ def translate_srt(
         )
 
         response = translate_chunk(
-            context,
+            openai_client=openai_client,
             messages=messages[-3:],  # let the model see previous request and response
             target_language=target_language,
             model=model,
             temperature=temperature,
+            verbose=verbose,
         )
 
         translated_chunk_str = find_translated_text(response)
@@ -224,14 +227,16 @@ def find_translated_text(translated_text):
     return translated_text
 
 
-def translate_chunk(context: Context, *, messages, model, temperature, target_language):
+def translate_chunk(
+    *, openai_client: openai.OpenAI, messages, model, temperature, target_language, verbose=False
+):
     """Translate a chunk of text"""
 
-    if context.verbose:
+    if verbose:
         print(messages)
     messages = translation_messages(messages, target_language=target_language)
 
-    response = context.openai_client.chat.completions.create(
+    response = openai_client.chat.completions.create(
         model=model,
         messages=messages,
         temperature=temperature,
@@ -260,16 +265,19 @@ Output ONLY translated text!
 
 def translation_messages(messages: List[Dict[str, str]], *, target_language: str):
     """Construct the translation messages"""
-    return [
-        {
-            "role": "system",
-            "content": f"""You are a world class professional translator specialized in translating to {target_language}.
+    return (
+        [
+            {
+                "role": "system",
+                "content": f"""You are a world class professional translator specialized in translating to {target_language}.
 Please maintain the exact text structure (lines of text, empty lines, line breaks, etc.) and do not add or remove any text!
 Make sure the line numbers are unchanged!
 Do not skip any line, even if you would have to output empty line, although try to translate in a way that does not result in empty lines.
 Stick to {target_language} grammar and punctuation rules.""",
-        }
-    ] + messages
+            }
+        ]
+        + messages
+    )
 
 
 def translate(context: Context):
@@ -279,10 +287,11 @@ def translate(context: Context):
         typer.echo(f"Translating {context.srt_path} to {context.translated_srt_path}")
 
         srt_list = translate_srt(
-            context,
             srt_path=context.srt_path,
             target_language=context.translate_to,
             model=context.gpt_model,
+            openai_client=context.openai_client,
+            verbose=context.verbose,
         )
         srt_dump(srt_list=srt_list, srt_filename=context.translated_srt_path)
     else:

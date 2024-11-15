@@ -94,7 +94,7 @@ class Context(BaseSettings):
         return self.srt_path.with_name(f"{self.srt_path.stem}_{self.translate_to}.srt")
 
     @property
-    def openai_client(self):
+    def openai_client(self) -> openai.OpenAI:
         """Returns the initialized OpenAI client."""
         return openai.OpenAI(
             api_key=self.openai_api_key,

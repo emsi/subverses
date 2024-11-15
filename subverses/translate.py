@@ -297,3 +297,32 @@ def translate(context: Context):
     else:
         typer.echo(f"Translated SRT file already exists: {context.translated_srt_path}")
         return
+
+
+def trabslate_subtitles(
+    srt_path: Path,
+    target_language: str,
+    openai_client,
+    model: str,
+    extra_prompt_instruction="",
+    temperature=0.0,
+    chunk_size=8,
+    overlap=3,
+    verbose=False,
+):
+    """Translate SRT files"""
+    translated_srt_path = srt_path.with_name(f"{srt_path.stem}_{target_language}.srt")
+    typer.echo(f"Translating {srt_path} to {translated_srt_path}")
+    srt_list = translate_srt(
+        srt_path=srt_path,
+        target_language=target_language,
+        openai_client=openai_client,
+        model=model,
+        extra_prompt_instruction=extra_prompt_instruction,
+        temperature=temperature,
+        chunk_size=chunk_size,
+        overlap=overlap,
+        verbose=verbose,
+    )
+    srt_dump(srt_list=srt_list, srt_filename=translated_srt_path)
+    typer.echo(f"DONE")

@@ -10,12 +10,12 @@ from subverses.download import (
     get_yuoutube_stream,
     download_audio,
     download as do_download,
-    download_video, get_local_stream,
+    download_video,
 )
 from subverses.errors import Abort
 from subverses.render import render_final_video
 from subverses.transcribe import transcribe_audio
-from subverses.translate import translate as do_translate
+from subverses.translate import translate as do_translate, trabslate_subtitles
 
 app = typer.Typer(add_completion=False)
 
@@ -42,7 +42,7 @@ def check_dependencies():
 
 
 @app.command()
-def main(
+def youtube(
     # required positional argument
     youtube_url: str = typer.Argument(
         ...,
@@ -122,7 +122,7 @@ def main(
         help="Verbose output.",
     ),
 ):
-    """Reasoning questions generation tool"""
+    """Process and translate YouTube videos"""
     try:
         config.initialize(**locals())
     except ValueError as exc:
@@ -161,6 +161,79 @@ def main(
         if not context.audio_filepath:
             download_audio(context)
         render_final_video(context)
+
+
+@app.command()
+def srt(
+    # required positional argument
+    srt_path: Path = typer.Argument(
+        ...,
+        help="Path to the SRT file to translate.",
+    ),
+    additional_instruction: Optional[str] = typer.Option(
+        None,
+        help="Additional prompt instruction for the translation model. E.g. 'Use family-friendly language.', 'Translate Geogie as Gigi', etc.",
+    ),
+    gpt_model: str = typer.Option(
+        "gpt-3.5-turbo",
+        help="Translation model name.",
+    ),
+    translate_from: str = typer.Option(
+        "en",
+        help="Translate from language. Use two letter ISO 639-1 country code.",
+    ),
+    translate_to: str = typer.Option(
+        "Polish",
+        help="Translate to language. Use full language name.",
+    ),
+    verbose: bool = typer.Option(
+        False,
+        help="Verbose output.",
+    ),
+):
+    """Process and translate SRT subtitle files"""
+    stub_arguments = {
+        "youtube_url": "",
+        "download": False,
+        "transcribe": False,
+        "translate": False,
+        "render": False,
+        "data_dir": Path(),
+        "download_max_retries": 0,
+        "skip_existing": False,
+        "whisper_prompt": None,
+        "whisper_model": "",
+        "force_transcription_from_audio": False,
+        "start_transcription_segment": 0,
+        "min_silence_len_sec": 0,
+        "silence_threshold": -30,
+        "translate_additional_prompt": None,
+        "gpt_model": gpt_model,
+        "translate_from": translate_from,
+        "translate_to": translate_to,
+        "verbose": verbose,
+    }
+    try:
+        config.initialize(**{**stub_arguments})
+    except ValueError as exc:
+        raise Abort(exc)
+
+    check_dependencies()
+
+    if pycountry.languages.get(alpha_2=translate_from) is None:
+        raise typer.BadParameter("Invalid language code")
+
+    if not srt_path.exists():
+        raise typer.BadParameter(f"SRT file not found: {srt_path}")
+
+    trabslate_subtitles(
+        srt_path=srt_path,
+        target_language=translate_to,
+        openai_client=config.config.openai_client,
+        model=gpt_model,
+        extra_prompt_instruction=additional_instruction,
+        verbose=verbose,
+    )
 
 
 if __name__ == "__main__":

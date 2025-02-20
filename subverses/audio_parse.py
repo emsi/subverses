@@ -245,7 +245,8 @@ def extract_audio(context):
         "libmp3lame",
         "-b:a",
         "56k",
-        "-ac 1",
+        "-ac",
+        "1",
         context.audio_filepath,
     ]
     typer.echo(" ".join(command))

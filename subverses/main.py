@@ -236,9 +236,14 @@ def srt(
     )
 
 
-if __name__ == "__main__":
+def main():
+    """Entry point for the application."""
     try:
         app(prog_name="subverses")
     except Abort as exc:
         typer.echo(exc, err=True)
         raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    main()

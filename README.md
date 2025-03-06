@@ -3,11 +3,38 @@
 Subverses is a simple CLI application to translate YouTube video subtitles to a different language. It uses the YouTube API to download the subtitles and the OpenAI API to translate them.
 If no subtitles are available for the video, the application will try to transcribe the audio and then translate it.
 
-### Quickstart
-`./subverses https://www.youtube.com/watch?v=...`
+## Installation
 
-The command above will download and create files in a dedicated subdirectory under `data` directory.
-For your convenience the subdirectory will be named after the video TITLE.
+You can install Subverses directly from GitHub:
+
+```bash
+pip install git+https://github.com/your-username/subverses.git
+```
+
+Or install it in development mode:
+
+```bash
+git clone https://github.com/your-username/subverses.git
+cd subverses
+pip install -e .
+```
+
+## Quickstart
+
+After installation, you can use the `subverses` command directly:
+
+```bash
+subverses youtube https://www.youtube.com/watch?v=...
+```
+
+Or translate an existing subtitle file:
+
+```bash
+subverses srt path/to/subtitle.srt
+```
+
+The YouTube command will download and create files in a dedicated subdirectory under `data` directory.
+For your convenience, the subdirectory will be named after the video title.
 
 ## Commandline options
 

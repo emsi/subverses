@@ -68,6 +68,7 @@ def get_local_stream(context: Context):
     ).as_posix()
     context.local_stream = True
     context.data_dir.mkdir(parents=True, exist_ok=True)
+    typer.echo(f"Data directory: {context.data_dir} - all files will be saved here.")
 
 
 def get_yuoutube_stream(context: Context):
@@ -82,6 +83,7 @@ def get_yuoutube_stream(context: Context):
 
     context.title = yt.title
     context.data_dir = Path(context.data_dir) / sanitize_filename(yt.title)
+    typer.echo(f"Data directory: {context.data_dir} - all files will be saved here.")
 
     context.srt_filepath = Path(
         yt.streams[0].get_file_path(output_path=context.data_dir.as_posix())
